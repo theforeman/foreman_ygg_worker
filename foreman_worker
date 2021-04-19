@@ -11,14 +11,18 @@ class ForemanClient < Yggdrasil::Worker::Service
   end
 end
 
+def normalize_socket(socket)
+  socket.sub('unix:@', 'unix-abstract:')
+end
+
 puts ENV['YGG_SOCKET_ADDR']
-socket = ENV['YGG_SOCKET_ADDR'].sub('unix:@', 'unix-abstract:')
+socket = normalize_socket(ENV['YGG_SOCKET_ADDR'])
 stub = Yggdrasil::Dispatcher::Stub.new(socket, :this_channel_is_insecure)
 response = stub.register(Yggdrasil::RegistrationRequest.new(handler: 'foreman', pid: Process.pid))
 
 
 if response.registered
-  socket_address = response.address
+  socket_address = normalize_socket(response.address)
 
   puts "I will listen on #{socket_address}"
 
