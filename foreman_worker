@@ -2,10 +2,7 @@
 
 require 'grpc'
 require 'socket'
-require_relative './yggdrasil_pb'
-
-stub = Yggdrasil::Dispatcher::Stub.new(ENV['YGG_SOCKET_ADDR'], :this_channel_is_insecure)
-response = stub.register(Yggdrasil::RegistrationRequest.new(handler: 'foreman', pid: Process.pid))
+require_relative './yggdrasil_services_pb'
 
 class ForemanClient < Yggdrasil::Worker::Service
   # despite the name, this is actually receiving data from server
@@ -13,6 +10,9 @@ class ForemanClient < Yggdrasil::Worker::Service
 
   end
 end
+
+stub = Yggdrasil::Dispatcher::Stub.new(ENV['YGG_SOCKET_ADDR'], :this_channel_is_insecure)
+response = stub.register(Yggdrasil::RegistrationRequest.new(handler: 'foreman', pid: Process.pid))
 
 
 if response.registered
