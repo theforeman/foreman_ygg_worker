@@ -22,7 +22,7 @@ response = stub.register(Yggdrasil::RegistrationRequest.new(handler: 'foreman', 
 
 
 if response.registered
-  socket_address = normalize_socket(response.address)
+  socket_address = normalize_socket("unix:#{response.address}")
 
   puts "I will listen on #{socket_address}"
 
