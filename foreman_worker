@@ -7,7 +7,7 @@ require_relative './yggdrasil_services_pb'
 class ForemanClient < Yggdrasil::Worker::Service
   # despite the name, this is actually receiving data from server
   def send(data)
-
+    puts data.inspect
   end
 end
 
@@ -29,5 +29,5 @@ if response.registered
   server = GRPC::RpcServer.new
   server.add_http2_port(socket_address, :this_port_is_insecure)
   server.handle(ForemanClient.new)
-  s.run_till_terminated_or_interrupted([1, 'int', 'SIGQUIT'])
+  server.run_till_terminated_or_interrupted([1, 'int', 'SIGQUIT'])
 end
