@@ -12,7 +12,8 @@ class ForemanClient < Yggdrasil::Worker::Service
 end
 
 puts ENV['YGG_SOCKET_ADDR']
-stub = Yggdrasil::Dispatcher::Stub.new(ENV['YGG_SOCKET_ADDR'], :this_channel_is_insecure)
+socket = ENV['YGG_SOCKET_ADDR'].sub('unix:@', 'unix-abstract:')
+stub = Yggdrasil::Dispatcher::Stub.new(socket, :this_channel_is_insecure)
 response = stub.register(Yggdrasil::RegistrationRequest.new(handler: 'foreman', pid: Process.pid))
 
 
