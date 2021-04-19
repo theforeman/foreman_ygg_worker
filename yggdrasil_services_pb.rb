@@ -2,8 +2,7 @@
 # Source: yggdrasil.proto for package 'yggdrasil'
 
 require 'grpc'
-require 'yggdrasil_pb'
-require 'yggdrasil_services_pb'
+require_relative 'yggdrasil_pb'
 
 module Yggdrasil
   module Dispatcher
