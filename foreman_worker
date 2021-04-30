@@ -2,12 +2,15 @@
 
 require 'grpc'
 require 'socket'
+require 'logger'
 require_relative './yggdrasil_services_pb'
+
+log = Logger.new('/var/log/ygg/foreman.log')
 
 class ForemanClient < Yggdrasil::Worker::Service
   # despite the name, this is actually receiving data from server
   def send(data)
-    puts data.inspect
+    log.info "I've got data: #{data.inspect}"
   end
 end
 
@@ -15,7 +18,9 @@ def normalize_socket(socket)
   socket.sub('unix:@', 'unix-abstract:')
 end
 
-puts ENV['YGG_SOCKET_ADDR']
+
+log.debug ENV['YGG_SOCKET_ADDR']
+
 socket = normalize_socket(ENV['YGG_SOCKET_ADDR'])
 stub = Yggdrasil::Dispatcher::Stub.new(socket, :this_channel_is_insecure)
 response = stub.register(Yggdrasil::RegistrationRequest.new(handler: 'foreman', pid: Process.pid))
@@ -24,7 +29,7 @@ response = stub.register(Yggdrasil::RegistrationRequest.new(handler: 'foreman', 
 if response.registered
   socket_address = normalize_socket("unix:#{response.address}")
 
-  puts "I will listen on #{socket_address}"
+  log.info "Foreman worker will listen on #{socket_address}"
 
   server = GRPC::RpcServer.new
   server.add_http2_port(socket_address, :this_port_is_insecure)
