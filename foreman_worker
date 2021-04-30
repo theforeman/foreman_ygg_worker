@@ -9,8 +9,10 @@ log = Logger.new('/var/log/ygg/foreman.log')
 
 class ForemanClient < Yggdrasil::Worker::Service
   # despite the name, this is actually receiving data from server
-  def send(data)
+  def send(data, _call)
     log.info "I've got data: #{data.inspect}"
+
+    Yggdrasil::Receipt.new
   end
 end
 
