@@ -2,10 +2,11 @@ package main
 
 import (
   "context"
-  "time"
+  // "time"
+  // "net/http"
 
   "git.sr.ht/~spc/go-log"
-  "github.com/google/uuid"
+  // "github.com/google/uuid"
   pb "github.com/redhatinsights/yggdrasil/protocol"
   "google.golang.org/grpc"
 )
@@ -23,6 +24,7 @@ func (s *foremanServer) Send(ctx context.Context, d *pb.Data) (*pb.Receipt, erro
   go func() {
     log.Tracef("received data: %#v", d)
     message := string(d.GetContent())
+    log.Tracef("message is: %#v", message)
 
     // Dial the Dispatcher and call "Finish"
     conn, err := grpc.Dial(yggdDispatchSocketAddr, grpc.WithInsecure())
@@ -32,9 +34,9 @@ func (s *foremanServer) Send(ctx context.Context, d *pb.Data) (*pb.Receipt, erro
     defer conn.Close()
 
     // Create a client of the Dispatch service
-    c := pb.NewDispatcherClient(conn)
-    ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-    defer cancel()
+    // c := pb.NewDispatcherClient(conn)
+    // ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+    // defer cancel()
 
     // Create a data message to send back to the dispatcher.
     // data := &pb.Data{
