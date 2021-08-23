@@ -35,7 +35,7 @@ func main() {
   defer cancel()
 
   // Register as a handler of the "foreman" type.
-  r, err := c.Register(ctx, &pb.RegistrationRequest{Handler: "foreman", Pid: int64(os.Getpid())})
+  r, err := c.Register(ctx, &pb.RegistrationRequest{Handler: "foreman", Pid: int64(os.Getpid()), DetachedContent: true})
   if err != nil {
     log.Fatal(err)
   }

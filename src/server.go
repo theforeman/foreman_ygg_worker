@@ -2,11 +2,11 @@ package main
 
 import (
   "context"
-  // "time"
+  "time"
   // "net/http"
 
   "git.sr.ht/~spc/go-log"
-  // "github.com/google/uuid"
+  "github.com/google/uuid"
   pb "github.com/redhatinsights/yggdrasil/protocol"
   "google.golang.org/grpc"
 )
@@ -24,7 +24,7 @@ func (s *foremanServer) Send(ctx context.Context, d *pb.Data) (*pb.Receipt, erro
   go func() {
     log.Tracef("received data: %#v", d)
     message := string(d.GetContent())
-    log.Tracef("message is: %#v", message)
+    log.Infof("message is: %#v", message)
 
     // Dial the Dispatcher and call "Finish"
     conn, err := grpc.Dial(yggdDispatchSocketAddr, grpc.WithInsecure())
@@ -34,23 +34,35 @@ func (s *foremanServer) Send(ctx context.Context, d *pb.Data) (*pb.Receipt, erro
     defer conn.Close()
 
     // Create a client of the Dispatch service
-    // c := pb.NewDispatcherClient(conn)
-    // ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-    // defer cancel()
+    c := pb.NewDispatcherClient(conn)
+    ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+    defer cancel()
 
     // Create a data message to send back to the dispatcher.
-    // data := &pb.Data{
-    //   MessageId:  uuid.New().String(),
-    //   ResponseTo: d.GetMessageId(),
-    //   Metadata:   d.GetMetadata(),
-    //   Content:    d.GetContent(),
-    //   Directive:  d.GetDirective(),
-    // }
+    data1 := &pb.Data{
+      MessageId:  uuid.New().String(),
+      ResponseTo: d.GetMessageId(),
+      Metadata:   d.GetMetadata(),
+      Content:    []byte("{\"json\":\"I loved what youve send me\"}"),
+      Directive:  d.GetDirective(),
+    }
 
     // Call "Send"
-    // if _, err := c.Send(ctx, data); err != nil {
-    //   log.Error(err)
-    // }
+    if _, err := c.Send(ctx, data1); err != nil {
+      log.Error(err)
+    }
+
+    data2 := &pb.Data{
+      MessageId:  uuid.New().String(),
+      ResponseTo: d.GetMessageId(),
+      Metadata:   d.GetMetadata(),
+      Content:    []byte("{\"json\":\"I loved what youve send me second time\"}"),
+      Directive:  d.GetDirective(),
+    }
+
+    if _, err := c.Send(ctx, data2); err != nil {
+      log.Error(err)
+    }
   }()
 
   // Respond to the start request that the work was accepted.
