@@ -42,9 +42,8 @@ func (s *foremanServer) Send(ctx context.Context, d *pb.Data) (*pb.Receipt, erro
     data1 := &pb.Data{
       MessageId:  uuid.New().String(),
       ResponseTo: d.GetMessageId(),
-      Metadata:   d.GetMetadata(),
       Content:    []byte("{\"json\":\"I loved what youve send me\"}"),
-      Directive:  d.GetDirective(),
+      Directive:  d.GetMetadata()["return_url"],
     }
 
     // Call "Send"
@@ -55,9 +54,8 @@ func (s *foremanServer) Send(ctx context.Context, d *pb.Data) (*pb.Receipt, erro
     data2 := &pb.Data{
       MessageId:  uuid.New().String(),
       ResponseTo: d.GetMessageId(),
-      Metadata:   d.GetMetadata(),
       Content:    []byte("{\"json\":\"I loved what youve send me second time\"}"),
-      Directive:  d.GetDirective(),
+      Directive:  d.GetMetadata()["return_url"],
     }
 
     if _, err := c.Send(ctx, data2); err != nil {

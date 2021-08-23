@@ -19,6 +19,9 @@ message = {
   sent: DateTime.now.iso8601,
   directive: 'foreman',
   content: 'https://raw.githubusercontent.com/ezr-ondrej/foreman_ygg_worker/main/work',
+  metadata: {
+    return_url: 'http://raw.example.com/return'
+  }
 }
 
 topic = "yggdrasil/#{CLIENT_UUID}/data/in"
