@@ -6,7 +6,7 @@ import (
   "bufio"
   "syscall"
   "fmt"
-  // "os"
+  "os"
   "io/ioutil"
   "os/exec"
 
@@ -24,7 +24,7 @@ func startScript(ctx context.Context, d *pb.Data) {
   if err != nil {
       log.Errorf("failed to create script tmp file: %v", err)
   }
-  // defer os.Remove(scriptfile.Name())
+  defer os.Remove(scriptfile.Name())
 
   n2, err := scriptfile.Write(d.GetContent())
   if err != nil {
@@ -32,7 +32,17 @@ func startScript(ctx context.Context, d *pb.Data) {
   }
   log.Debugf("script of %d bytes written in : %#v", n2, scriptfile.Name())
 
-  cmd := exec.Command("/bin/sh", scriptfile.Name())
+  err = scriptfile.Close()
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  err = os.Chmod(scriptfile.Name(), 0700)
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  cmd := exec.Command("/bin/sh", "-c", scriptfile.Name())
   // cmd.Env = env
 
   stdout, err := cmd.StdoutPipe()
@@ -53,7 +63,7 @@ func startScript(ctx context.Context, d *pb.Data) {
   }
   log.Infof("started script process: %v", cmd.Process.Pid)
 
-  // Dial the Dispatcher and call "Finish"
+  // Dial the Dispatcher
   conn, err := grpc.Dial(yggdDispatchSocketAddr, grpc.WithInsecure())
   if err != nil {
     log.Fatal(err)
