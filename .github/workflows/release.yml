@@ -32,6 +32,8 @@ jobs:
         run: |
           make distribution-tarball
           sudo mv *.tar.gz dist/
+        env:
+          VERSION: '${{ steps.tagName.outputs.tag }}'
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
