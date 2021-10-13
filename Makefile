@@ -1,5 +1,5 @@
 PKGNAME := foreman_ygg_worker
-VERSION := 0.0.1
+VERSION := 0.0.3
 
 build: src/main.go src/server.go src/runner.go
 	mkdir -p build
