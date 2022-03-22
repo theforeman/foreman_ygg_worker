@@ -12,11 +12,12 @@ import (
 // "Finish" method.
 type foremanServer struct {
   pb.UnimplementedWorkerServer
+  jobStorage jobStorage
 }
 
 // Send implements the "Send" method of the Worker gRPC service.
 func (s *foremanServer) Send(ctx context.Context, d *pb.Data) (*pb.Receipt, error) {
-  go dispatch(ctx, d)
+  go dispatch(ctx, d, &s.jobStorage)
 
   // Respond to the start request that the work was accepted.
   return &pb.Receipt{}, nil
