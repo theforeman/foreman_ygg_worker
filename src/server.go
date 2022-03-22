@@ -16,7 +16,7 @@ type foremanServer struct {
 
 // Send implements the "Send" method of the Worker gRPC service.
 func (s *foremanServer) Send(ctx context.Context, d *pb.Data) (*pb.Receipt, error) {
-  go startScript(ctx, d)
+  go dispatch(ctx, d)
 
   // Respond to the start request that the work was accepted.
   return &pb.Receipt{}, nil
