@@ -24,3 +24,9 @@ distribution-tarball:
 		--transform s/^\./$(PKGNAME)-$(VERSION)/ \
 		. && mv /tmp/$(PKGNAME)-$(VERSION).tar.gz .
 	rm -rf ./vendor
+
+test:
+	go test src/*
+
+vet:
+	go vet src/*
