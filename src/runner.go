@@ -27,7 +27,7 @@ func dispatch(ctx context.Context, d *pb.Data, s *jobStorage) {
   case "start":
     startScript(ctx, d, s);
   case "cancel":
-    log.Errorln("Cancellation not implemented yet")
+    cancel(ctx, d, s)
   default:
     log.Errorf("Received unknown event '%v'", event)
   }
@@ -132,6 +132,23 @@ func startScript(ctx context.Context, d *pb.Data, s *jobStorage) {
   } else {
     sendExitCode(c, d.GetMessageId(), d.GetMetadata()["return_url"], 0)
   }
+}
+
+func cancel(ctx context.Context, d *pb.Data, s *jobStorage) {
+  jobUUID, jobUUIDP := d.GetMetadata()["job_uuid"]
+  if !jobUUIDP {
+    log.Errorln("No job uuid found in job's metadata, aborting.")
+    return
+  }
+
+  pid, prs := s.Get(jobUUID)
+  if !prs {
+    log.Errorf("Cannot cancel unknown job %v", jobUUID)
+    return
+  }
+
+  log.Tracef("Cancelling job %v, sending SIGTERM to process %v", jobUUID, pid)
+  syscall.Kill(pid, syscall.SIGTERM)
 }
 
 func sendUpdate(c pb.DispatcherClient, origmsgid string, url string, message string, stdtype string) {
