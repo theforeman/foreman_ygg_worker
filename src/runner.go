@@ -16,6 +16,23 @@ import (
   "google.golang.org/grpc"
 )
 
+func dispatch(ctx context.Context, d *pb.Data) {
+  event, prs := d.GetMetadata()["event"];
+  if !prs {
+    log.Warnln("Message metadata does not contain event field, assuming 'start'");
+    event = "start";
+  }
+
+  switch event {
+  case "start":
+    startScript(ctx, d);
+  case "cancel":
+    log.Errorln("Cancellation not implemented yet")
+  default:
+    log.Errorf("Received unknown event '%v'", event)
+  }
+}
+
 func startScript(ctx context.Context, d *pb.Data) {
   script := string(d.GetContent())
   log.Tracef("running script : %#v", script)
