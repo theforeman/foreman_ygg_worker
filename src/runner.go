@@ -16,7 +16,7 @@ import (
   "google.golang.org/grpc"
 )
 
-func dispatch(ctx context.Context, d *pb.Data) {
+func dispatch(ctx context.Context, d *pb.Data, s *jobStorage) {
   event, prs := d.GetMetadata()["event"];
   if !prs {
     log.Warnln("Message metadata does not contain event field, assuming 'start'");
@@ -25,7 +25,7 @@ func dispatch(ctx context.Context, d *pb.Data) {
 
   switch event {
   case "start":
-    startScript(ctx, d);
+    startScript(ctx, d, s);
   case "cancel":
     log.Errorln("Cancellation not implemented yet")
   default:
@@ -33,7 +33,12 @@ func dispatch(ctx context.Context, d *pb.Data) {
   }
 }
 
-func startScript(ctx context.Context, d *pb.Data) {
+func startScript(ctx context.Context, d *pb.Data, s *jobStorage) {
+  jobUUID, jobUUIDP := d.GetMetadata()["job_uuid"]
+  if !jobUUIDP {
+    log.Warnln("No job uuid found in job's metadata, will not be able to cancel this job")
+  }
+
   script := string(d.GetContent())
   log.Tracef("running script : %#v", script)
 
@@ -79,6 +84,10 @@ func startScript(ctx context.Context, d *pb.Data) {
     return
   }
   log.Infof("started script process: %v", cmd.Process.Pid)
+  if jobUUIDP {
+    s.Set(jobUUID, cmd.Process.Pid)
+    defer s.Remove(jobUUID)
+  }
 
   // Dial the Dispatcher
   conn, err := grpc.Dial(yggdDispatchSocketAddr, grpc.WithInsecure())

@@ -51,7 +51,7 @@ func main() {
 
   // Register as a Worker service with gRPC and start accepting connections.
   s := grpc.NewServer()
-  pb.RegisterWorkerServer(s, &foremanServer{})
+  pb.RegisterWorkerServer(s, &foremanServer{jobStorage: newJobStorage()})
   if err := s.Serve(l); err != nil {
     log.Fatal(err)
   }
