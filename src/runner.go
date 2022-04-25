@@ -5,9 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"sync"
 	"syscall"
 	"time"
 
@@ -98,28 +100,12 @@ func startScript(ctx context.Context, d *pb.Data, s *jobStorage) {
 	defer conn.Close()
 
 	c := pb.NewDispatcherClient(conn)
+	var wg sync.WaitGroup
+	wg.Add(2)
 
-	go func() {
-		scanner := bufio.NewScanner(stdout)
-		for scanner.Scan() {
-			msg := scanner.Text()
-			log.Tracef("stdout message: %v", msg)
-			sendUpdate(c, d.GetMessageId(), d.GetMetadata()["return_url"], msg, "stdout")
-		}
-		if err := scanner.Err(); err != nil {
-			log.Errorf("cannot read from stdout: %v", err)
-		}
-	}()
-
-	go func() {
-		scanner := bufio.NewScanner(stderr)
-		for scanner.Scan() {
-			sendUpdate(c, d.GetMessageId(), d.GetMetadata()["return_url"], scanner.Text(), "stderr")
-		}
-		if err := scanner.Err(); err != nil {
-			log.Errorf("cannot read from stderr: %v", err)
-		}
-	}()
+	go func() { outputCollector(c, d, "stdout", stdout); wg.Done() }()
+	go func() { outputCollector(c, d, "stderr", stderr); wg.Done() }()
+	wg.Wait()
 
 	if err := cmd.Wait(); err != nil {
 		if exiterr, ok := err.(*exec.ExitError); ok {
@@ -132,6 +118,18 @@ func startScript(ctx context.Context, d *pb.Data, s *jobStorage) {
 		}
 	} else {
 		sendExitCode(c, d.GetMessageId(), d.GetMetadata()["return_url"], 0)
+	}
+}
+
+func outputCollector(c pb.DispatcherClient, d *pb.Data, stdtype string, pipe io.ReadCloser) {
+	scanner := bufio.NewScanner(pipe)
+	for scanner.Scan() {
+		msg := scanner.Text()
+		log.Tracef("%v message: %v", stdtype, msg)
+		sendUpdate(c, d.GetMessageId(), d.GetMetadata()["return_url"], msg, stdtype)
+	}
+	if err := scanner.Err(); err != nil {
+		log.Errorf("cannot read from %v: %v", stdtype, err)
 	}
 }
 
