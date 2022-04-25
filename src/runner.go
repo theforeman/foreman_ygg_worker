@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -155,14 +156,25 @@ func cancel(ctx context.Context, d *pb.Data, s *jobStorage) {
 	}
 }
 
+type Update struct {
+	Output string `json:"output"`
+	Type   string `json:"type"`
+}
+
 func sendUpdate(c pb.DispatcherClient, origmsgid string, url string, message string, stdtype string) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
+	content, err := json.Marshal(Update{Output: message, Type: stdtype})
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
 	data := &pb.Data{
 		MessageId:  uuid.New().String(),
 		ResponseTo: origmsgid,
-		Content:    []byte("{\"output\": \"" + message + "\", \"type\": \"" + stdtype + "\"}"),
+		Content:    content,
 		Directive:  url,
 	}
 
