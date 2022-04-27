@@ -4,9 +4,11 @@ ifeq ($(origin VERSION), undefined)
 	VERSION := 0.0.3
 endif
 
-build: src/main.go src/server.go src/runner.go
+go_sources := $(wildcard src/*.go)
+
+build: $(go_sources)
 	mkdir -p build
-	CGO_ENABLED=0 go build -o build/foreman_worker src/main.go src/server.go src/runner.go src/job_storage.go
+	CGO_ENABLED=0 go build -o build/foreman_worker $^
 
 clean:
 	rm -rf build
