@@ -165,7 +165,7 @@ func sendUpdate(c pb.DispatcherClient, origmsgid string, url string, message str
 	updates := V1Updates{
 		Version: "1",
 		Updates: []V1Update{
-			V1Update{Timestamp: time.Now().Format(time.RFC3339), Type: "output", Content: &message, Stream: &stdtype},
+			V1Update{Timestamp: time.Now().Format(time.RFC3339), Type: "output", OutputEvent: OutputEvent{Content: &message, Stream: &stdtype}},
 		},
 	}
 	content, err := json.Marshal(updates)
@@ -197,7 +197,7 @@ func sendExitCode(c pb.DispatcherClient, origmsgid string, url string, code int)
 	updates := V1Updates{
 		Version: "1",
 		Updates: []V1Update{
-			V1Update{Timestamp: time.Now().Format(time.RFC3339), Type: "exit", ExitCode: &code},
+			V1Update{Timestamp: time.Now().Format(time.RFC3339), Type: "exit", ExitEvent: ExitEvent{ExitCode: &code}},
 		},
 	}
 
