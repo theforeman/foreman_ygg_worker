@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -122,14 +121,20 @@ func startScript(ctx context.Context, d *pb.Data, s *jobStorage) {
 }
 
 func outputCollector(c pb.DispatcherClient, d *pb.Data, stdtype string, pipe io.ReadCloser) {
-	scanner := bufio.NewScanner(pipe)
-	for scanner.Scan() {
-		msg := scanner.Text()
-		log.Tracef("%v message: %v", stdtype, msg)
-		sendUpdate(c, d.GetMessageId(), d.GetMetadata()["return_url"], msg, stdtype)
-	}
-	if err := scanner.Err(); err != nil {
-		log.Errorf("cannot read from %v: %v", stdtype, err)
+	buf := make([]byte, 4096)
+	for {
+		n, err := pipe.Read(buf)
+		if n > 0 {
+			msg := string(buf[:n])
+			log.Tracef("%v message: %v", stdtype, msg)
+			sendUpdate(c, d.GetMessageId(), d.GetMetadata()["return_url"], msg, stdtype)
+		}
+		if err != nil {
+			if err != io.EOF {
+				log.Errorf("cannot read from %v: %v", stdtype, err)
+			}
+			break
+		}
 	}
 }
 
