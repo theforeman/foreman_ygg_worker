@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -159,16 +158,17 @@ func cancel(ctx context.Context, d *pb.Data, s *jobStorage) {
 	}
 }
 
-type Update struct {
-	Output string `json:"output"`
-	Type   string `json:"type"`
-}
-
 func sendUpdate(c pb.DispatcherClient, origmsgid string, url string, message string, stdtype string) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	content, err := json.Marshal(Update{Output: message, Type: stdtype})
+	updates := V1Updates{
+		Version: "1",
+		Updates: []V1Update{
+			V1Update{Timestamp: time.Now().Format(time.RFC3339), Type: "output", Content: &message, Stream: &stdtype},
+		},
+	}
+	content, err := json.Marshal(updates)
 	if err != nil {
 		log.Error(err)
 		return
@@ -194,10 +194,23 @@ func sendExitCode(c pb.DispatcherClient, origmsgid string, url string, code int)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
+	updates := V1Updates{
+		Version: "1",
+		Updates: []V1Update{
+			V1Update{Timestamp: time.Now().Format(time.RFC3339), Type: "exit", ExitCode: &code},
+		},
+	}
+
+	payload, err := json.Marshal(updates)
+	if err != nil {
+		log.Errorf("Failed to marshal json: %v", err)
+		return
+	}
+
 	data := &pb.Data{
 		MessageId:  uuid.New().String(),
 		ResponseTo: origmsgid,
-		Content:    []byte(fmt.Sprintf("{\"exit_code\": %d}", code)),
+		Content:    payload,
 		Metadata:   map[string]string{"Content-Type": "application/json"},
 		Directive:  url,
 	}
