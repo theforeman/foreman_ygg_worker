@@ -10,20 +10,23 @@ import (
 	"time"
 )
 
-const Threshold = 32
+const CountThreshold = 32
+const TimeThreshold = 15 // Seconds
 
 type UpdateAggregator struct {
 	Updates   []V1Update
 	Count     int
 	ReturnURL string
 	MessageID string
+	LastSend  time.Time
 }
 
 func NewUpdateAggregator(returnUrl string, messageID string) UpdateAggregator {
 	return UpdateAggregator{
-		Updates:   make([]V1Update, Threshold),
+		Updates:   make([]V1Update, CountThreshold),
 		ReturnURL: returnUrl,
 		MessageID: messageID,
+		LastSend:  time.Now(),
 	}
 }
 
@@ -44,8 +47,7 @@ func (a *UpdateAggregator) DispatchEvent(event V1Update, c pb.DispatcherClient) 
 	a.Updates[a.Count] = event
 	a.Count++
 
-	if a.Count == Threshold || event.Type == "exit" {
-		// TODO: Or time since last update
+	if a.Count == CountThreshold || time.Since(a.LastSend).Seconds() > TimeThreshold || event.Type == "exit" {
 		a.SendUpdates(c)
 	}
 }
@@ -80,4 +82,5 @@ func (a *UpdateAggregator) SendUpdates(c pb.DispatcherClient) {
 	}
 
 	a.Count = 0
+	a.LastSend = time.Now()
 }
