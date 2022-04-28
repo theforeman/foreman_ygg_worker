@@ -175,6 +175,7 @@ func sendUpdate(c pb.DispatcherClient, origmsgid string, url string, message str
 		MessageId:  uuid.New().String(),
 		ResponseTo: origmsgid,
 		Content:    content,
+		Metadata:   map[string]string{"Content-Type": "application/json"},
 		Directive:  url,
 	}
 
@@ -194,6 +195,7 @@ func sendExitCode(c pb.DispatcherClient, origmsgid string, url string, code int)
 		MessageId:  uuid.New().String(),
 		ResponseTo: origmsgid,
 		Content:    []byte(fmt.Sprintf("{\"exit_code\": %d}", code)),
+		Metadata:   map[string]string{"Content-Type": "application/json"},
 		Directive:  url,
 	}
 
