@@ -2,19 +2,15 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"sync"
 	"syscall"
-	"time"
 
 	"git.sr.ht/~spc/go-log"
-	"github.com/google/uuid"
 	pb "github.com/redhatinsights/yggdrasil/protocol"
-	"google.golang.org/grpc"
 )
 
 func dispatch(ctx context.Context, d *pb.Data, s *jobStorage) {
@@ -90,43 +86,41 @@ func startScript(ctx context.Context, d *pb.Data, s *jobStorage) {
 		defer s.Remove(jobUUID)
 	}
 
-	// Dial the Dispatcher
-	conn, err := grpc.Dial(yggdDispatchSocketAddr, grpc.WithInsecure())
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer conn.Close()
-
-	c := pb.NewDispatcherClient(conn)
 	var wg sync.WaitGroup
 	wg.Add(2)
 
-	go func() { outputCollector(c, d, "stdout", stdout); wg.Done() }()
-	go func() { outputCollector(c, d, "stderr", stderr); wg.Done() }()
+	updates := make(chan V1Update)
+
+	oa := NewUpdateAggregator(d.GetMetadata()["return_url"], d.GetMessageId())
+	go oa.Aggregate(updates)
+
+	go func() { outputCollector("stdout", stdout, updates); wg.Done() }()
+	go func() { outputCollector("stderr", stderr, updates); wg.Done() }()
 	wg.Wait()
 
 	if err := cmd.Wait(); err != nil {
 		if exiterr, ok := err.(*exec.ExitError); ok {
 			// The program has exited with an exit code != 0
 			if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
-				sendExitCode(c, d.GetMessageId(), d.GetMetadata()["return_url"], status.ExitStatus())
+				updates <- NewExitUpdate(status.ExitStatus())
 			}
 		} else {
 			log.Errorf("script run failed: %v", err)
 		}
 	} else {
-		sendExitCode(c, d.GetMessageId(), d.GetMetadata()["return_url"], 0)
+		updates <- NewExitUpdate(0)
 	}
+	close(updates)
 }
 
-func outputCollector(c pb.DispatcherClient, d *pb.Data, stdtype string, pipe io.ReadCloser) {
+func outputCollector(stdtype string, pipe io.ReadCloser, outputs chan<- V1Update) {
 	buf := make([]byte, 4096)
 	for {
 		n, err := pipe.Read(buf)
 		if n > 0 {
 			msg := string(buf[:n])
 			log.Tracef("%v message: %v", stdtype, msg)
-			sendUpdate(c, d.GetMessageId(), d.GetMetadata()["return_url"], msg, stdtype)
+			outputs <- NewOutputUpdate(stdtype, msg)
 		}
 		if err != nil {
 			if err != io.EOF {
@@ -155,67 +149,5 @@ func cancel(ctx context.Context, d *pb.Data, s *jobStorage) {
 	log.Infof("Cancelling job %v, sending SIGTERM to process %v", jobUUID, pid)
 	if err := syscallKill(pid, syscall.SIGTERM); err != nil {
 		log.Errorf("Failed to send SIGTERM to process %v: %v", pid, err)
-	}
-}
-
-func sendUpdate(c pb.DispatcherClient, origmsgid string, url string, message string, stdtype string) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-
-	updates := V1Updates{
-		Version: "1",
-		Updates: []V1Update{
-			V1Update{Timestamp: time.Now().Format(time.RFC3339), Type: "output", OutputEvent: OutputEvent{Content: &message, Stream: &stdtype}},
-		},
-	}
-	content, err := json.Marshal(updates)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-
-	data := &pb.Data{
-		MessageId:  uuid.New().String(),
-		ResponseTo: origmsgid,
-		Content:    content,
-		Metadata:   map[string]string{"Content-Type": "application/json"},
-		Directive:  url,
-	}
-
-	if _, err := c.Send(ctx, data); err != nil {
-		log.Error(err)
-	}
-}
-
-func sendExitCode(c pb.DispatcherClient, origmsgid string, url string, code int) {
-	// wait for the other updates
-	time.Sleep(time.Duration(2) * time.Second)
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-
-	updates := V1Updates{
-		Version: "1",
-		Updates: []V1Update{
-			V1Update{Timestamp: time.Now().Format(time.RFC3339), Type: "exit", ExitEvent: ExitEvent{ExitCode: &code}},
-		},
-	}
-
-	payload, err := json.Marshal(updates)
-	if err != nil {
-		log.Errorf("Failed to marshal json: %v", err)
-		return
-	}
-
-	data := &pb.Data{
-		MessageId:  uuid.New().String(),
-		ResponseTo: origmsgid,
-		Content:    payload,
-		Metadata:   map[string]string{"Content-Type": "application/json"},
-		Directive:  url,
-	}
-
-	if _, err := c.Send(ctx, data); err != nil {
-		log.Error(err)
 	}
 }
