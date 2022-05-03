@@ -92,7 +92,7 @@ func startScript(ctx context.Context, d *pb.Data, s *jobStorage) {
 	updates := make(chan V1Update)
 
 	oa := NewUpdateAggregator(d.GetMetadata()["return_url"], d.GetMessageId())
-	go oa.Aggregate(updates)
+	go oa.Aggregate(updates, &YggdrasilGrpc{})
 
 	go func() { outputCollector("stdout", stdout, updates); wg.Done() }()
 	go func() { outputCollector("stderr", stderr, updates); wg.Done() }()

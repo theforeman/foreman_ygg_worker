@@ -1,12 +1,10 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"git.sr.ht/~spc/go-log"
 	"github.com/google/uuid"
 	pb "github.com/redhatinsights/yggdrasil/protocol"
-	"google.golang.org/grpc"
 	"time"
 )
 
@@ -30,32 +28,31 @@ func NewUpdateAggregator(returnUrl string, messageID string) UpdateAggregator {
 	}
 }
 
-func (a *UpdateAggregator) Aggregate(events <-chan V1Update) {
-	conn, err := grpc.Dial(yggdDispatchSocketAddr, grpc.WithInsecure())
-	if err != nil {
+func (a *UpdateAggregator) Aggregate(events <-chan V1Update, c ExternalCommunication) {
+	if err := c.Connect(); err != nil {
 		log.Fatal(err)
 	}
-	defer conn.Close()
+	defer c.Disconnect()
 
-	c := pb.NewDispatcherClient(conn)
 	for event := range events {
 		a.DispatchEvent(event, c)
 	}
 }
 
-func (a *UpdateAggregator) DispatchEvent(event V1Update, c pb.DispatcherClient) {
-	a.Updates[a.Count] = event
-	a.Count++
+func (a *UpdateAggregator) DispatchEvent(event V1Update, c ExternalCommunication) {
+	a.Add(event)
 
 	if a.Count == CountThreshold || time.Since(a.LastSend).Seconds() > TimeThreshold || event.Type == "exit" {
 		a.SendUpdates(c)
 	}
 }
 
-func (a *UpdateAggregator) SendUpdates(c pb.DispatcherClient) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
+func (a *UpdateAggregator) Add(event V1Update) {
+	a.Updates[a.Count] = event
+	a.Count++
+}
 
+func (a *UpdateAggregator) SendUpdates(c ExternalCommunication) {
 	updates := V1Updates{
 		Version: "1",
 		Updates: a.Updates[:a.Count],
@@ -77,7 +74,7 @@ func (a *UpdateAggregator) SendUpdates(c pb.DispatcherClient) {
 		Directive: a.ReturnURL,
 	}
 
-	if _, err := c.Send(ctx, data); err != nil {
+	if err := c.Send(data); err != nil {
 		log.Error(err)
 	}
 
