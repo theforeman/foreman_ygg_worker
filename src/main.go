@@ -22,6 +22,20 @@ func main() {
 		log.Fatal("Missing YGG_SOCKET_ADDR environment variable")
 	}
 
+	yggdLogLevel, ok := os.LookupEnv("YGG_LOG_LEVEL")
+	if ok {
+		level, ok := log.ParseLevel(yggdLogLevel)
+		if ok != nil {
+			log.Errorf("Could not parse log level '%v'", yggdLogLevel)
+		} else {
+			log.SetLevel(level)
+		}
+	} else {
+		// Yggdrasil < 3.0 does not share its configured log level with the
+		// workers in any way
+		log.SetLevel(log.LevelInfo)
+	}
+
 	// Dial the dispatcher on its well-known address.
 	conn, err := grpc.Dial(yggdDispatchSocketAddr, grpc.WithInsecure())
 	if err != nil {
