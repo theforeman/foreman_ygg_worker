@@ -39,3 +39,8 @@ type V1Updates struct {
 	Version string     `json:"version"`
 	Updates []V1Update `json:"updates"`
 }
+
+type V1JobDefinition struct {
+	Script        string  `json:"script"`
+	EffectiveUser *string `json:"effective_user"`
+}
