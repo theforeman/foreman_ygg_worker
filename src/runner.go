@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"os/user"
+	"strconv"
 	"sync"
 	"syscall"
 
@@ -49,24 +50,14 @@ func startScript(ctx context.Context, d *pb.Data, s *jobStorage) {
 	oa := NewUpdateAggregator(d.GetMetadata()["return_url"], d.GetMessageId())
 	go oa.Aggregate(updates, &YggdrasilGrpc{})
 
-	script := string(d.GetContent())
 	job := V1JobDefinition{}
-	jobVersion, jobVersionP := d.GetMetadata()["version"]
-	// Talking to a Smart Proxy which gives pre-v1 jobs
-	if !jobVersionP {
-		job.Script = script
-	} else if jobVersion == "v1" {
-		err := json.Unmarshal([]byte(script), &job)
-		if err != nil {
-			reportStartError(fmt.Sprintf("Could not decode job JSON %v", err), updates)
-			return
-		}
-	} else {
-		reportStartError(fmt.Sprintf("Unknown job version '%v'", jobVersion), updates)
-		return
-	}
-
+	job.Script = string(d.GetContent())
 	log.Tracef("running script : %#v", job.Script)
+
+	effectiveUser, effectiveUserP := d.GetMetadata()["effective_user"]
+	if effectiveUserP && effectiveUser != "" {
+		job.EffectiveUser = &effectiveUser
+	}
 
 	scriptfile, err := ioutil.TempFile("/tmp", "ygg_rex")
 	if err != nil {
@@ -96,6 +87,24 @@ func startScript(ctx context.Context, d *pb.Data, s *jobStorage) {
 
 	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("cd ~; export HOME=\"$PWD\"; exec %v", scriptfile.Name()))
 	// cmd.Env = env
+	if job.EffectiveUser != nil {
+		u, err := user.Lookup(*job.EffectiveUser)
+		if err != nil {
+			reportStartError(fmt.Sprintf("Unknown effective user '%v'", *job.EffectiveUser), updates)
+			return
+		}
+		uid, _ := strconv.ParseInt(u.Uid, 10, 32)
+		gid, _ := strconv.ParseInt(u.Gid, 10, 32)
+
+		err = os.Chown(scriptfile.Name(), int(uid), int(gid))
+		if err != nil {
+			reportStartError(fmt.Sprintf("Failed to change ownership of script: %v", err), updates)
+			return
+		}
+
+		cmd.SysProcAttr = &syscall.SysProcAttr{}
+		cmd.SysProcAttr.Credential = &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)}
+	}
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
