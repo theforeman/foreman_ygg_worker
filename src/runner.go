@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"os/user"
+	"strconv"
 	"sync"
 	"syscall"
 
@@ -96,6 +98,24 @@ func startScript(ctx context.Context, d *pb.Data, s *jobStorage) {
 
 	cmd := exec.Command("/bin/sh", "-c", scriptfile.Name())
 	// cmd.Env = env
+	if job.EffectiveUser != nil {
+		u, err := user.Lookup(*job.EffectiveUser)
+		if err != nil {
+			reportStartError(fmt.Sprintf("Unknown effective user '%v'", *job.EffectiveUser), updates)
+			return
+		}
+		uid, _ := strconv.ParseInt(u.Uid, 10, 32)
+		gid, _ := strconv.ParseInt(u.Gid, 10, 32)
+
+		err = os.Chown(scriptfile.Name(), int(uid), int(gid))
+		if err != nil {
+			reportStartError(fmt.Sprintf("Failed to change ownership of script: %v", err), updates)
+			return
+		}
+
+		cmd.SysProcAttr = &syscall.SysProcAttr{}
+		cmd.SysProcAttr.Credential = &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)}
+	}
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
