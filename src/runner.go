@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -42,13 +43,30 @@ func startScript(ctx context.Context, d *pb.Data, s *jobStorage) {
 	}
 
 	log.Infof("Starting job %v", jobUUID)
-	script := string(d.GetContent())
-	log.Tracef("running script : %#v", script)
 
 	updates := make(chan V1Update)
 
 	oa := NewUpdateAggregator(d.GetMetadata()["return_url"], d.GetMessageId())
 	go oa.Aggregate(updates, &YggdrasilGrpc{})
+
+	script := string(d.GetContent())
+	job := V1JobDefinition{}
+	jobVersion, jobVersionP := d.GetMetadata()["version"]
+	// Talking to a Smart Proxy which gives pre-v1 jobs
+	if !jobVersionP {
+		job.Script = script
+	} else if jobVersion == "v1" {
+		err := json.Unmarshal([]byte(script), &job)
+		if err != nil {
+			reportStartError(fmt.Sprintf("Could not decode job JSON %v", err), updates)
+			return
+		}
+	} else {
+		reportStartError(fmt.Sprintf("Unknown job version '%v'", jobVersion), updates)
+		return
+	}
+
+	log.Tracef("running script : %#v", job.Script)
 
 	scriptfile, err := ioutil.TempFile("/tmp", "ygg_rex")
 	if err != nil {
@@ -57,7 +75,7 @@ func startScript(ctx context.Context, d *pb.Data, s *jobStorage) {
 	}
 	defer os.Remove(scriptfile.Name())
 
-	n2, err := scriptfile.Write(d.GetContent())
+	n2, err := scriptfile.Write([]byte(job.Script))
 	if err != nil {
 		reportStartError(fmt.Sprintf("failed to write script to tmp file: %v", err), updates)
 		return
