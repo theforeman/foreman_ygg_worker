@@ -36,6 +36,15 @@ func main() {
 		log.SetLevel(log.LevelInfo)
 	}
 
+	home, err := os.UserHomeDir()
+	if err != nil {
+		log.Errorf("Could not determine home directory: %v", err)
+	} else {
+		if os.Chdir(home) != nil {
+			log.Errorf("Failed to set working directory to %v: %v", home, err)
+		}
+	}
+
 	// Dial the dispatcher on its well-known address.
 	conn, err := grpc.Dial(yggdDispatchSocketAddr, grpc.WithInsecure())
 	if err != nil {
