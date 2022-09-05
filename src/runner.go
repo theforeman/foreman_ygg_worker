@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -64,7 +65,7 @@ func startScript(ctx context.Context, d *pb.Data, s *jobStorage) {
 		log.Fatal(err)
 	}
 
-	cmd := exec.Command("/bin/sh", "-c", scriptfile.Name())
+	cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("cd ~; exec %v", scriptfile.Name()))
 	// cmd.Env = env
 
 	stdout, err := cmd.StdoutPipe()
