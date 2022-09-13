@@ -1,7 +1,7 @@
 PKGNAME := foreman_ygg_worker
 
 ifeq ($(origin VERSION), undefined)
-	VERSION := 0.1.0
+	VERSION := 0.1.1
 endif
 
 go_sources := $(wildcard src/*.go)
