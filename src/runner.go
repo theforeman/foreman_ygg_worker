@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"os/user"
@@ -59,7 +58,7 @@ func startScript(ctx context.Context, d *pb.Data, s *jobStorage) {
 		job.EffectiveUser = &effectiveUser
 	}
 
-	scriptfile, err := ioutil.TempFile("/tmp", "ygg_rex")
+	scriptfile, err := os.CreateTemp("", "ygg_rex")
 	if err != nil {
 		reportStartError(fmt.Sprintf("failed to create script tmp file: %v", err), updates)
 		return
