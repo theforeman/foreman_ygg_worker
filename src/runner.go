@@ -58,7 +58,9 @@ func startScript(ctx context.Context, d *pb.Data, s *jobStorage) {
 		job.EffectiveUser = &effectiveUser
 	}
 
-	scriptfile, err := os.CreateTemp("", "ygg_rex")
+	workingDir := d.GetMetadata()["working_directory"]
+
+	scriptfile, err := os.CreateTemp(workingDir, "ygg_rex")
 	if err != nil {
 		reportStartError(fmt.Sprintf("failed to create script tmp file: %v", err), updates)
 		return
