@@ -18,7 +18,7 @@ import (
 
 const preStartErrorExitCode = 254
 
-func dispatch(ctx context.Context, d *pb.Data, s *jobStorage) {
+func dispatch(ctx context.Context, d *pb.Data, s *serverContext) {
 	event, prs := d.GetMetadata()["event"]
 	if !prs {
 		log.Warnln("Message metadata does not contain event field, assuming 'start'")
@@ -35,7 +35,7 @@ func dispatch(ctx context.Context, d *pb.Data, s *jobStorage) {
 	}
 }
 
-func startScript(ctx context.Context, d *pb.Data, s *jobStorage) {
+func startScript(ctx context.Context, d *pb.Data, s *serverContext) {
 	jobUUID, jobUUIDP := d.GetMetadata()["job_uuid"]
 	if !jobUUIDP {
 		jobUUID = uuid.New().String()
@@ -58,7 +58,7 @@ func startScript(ctx context.Context, d *pb.Data, s *jobStorage) {
 		job.EffectiveUser = &effectiveUser
 	}
 
-	scriptfile, err := os.CreateTemp("", "ygg_rex")
+	scriptfile, err := os.CreateTemp(s.workingDirectory, "ygg_rex")
 	if err != nil {
 		reportStartError(fmt.Sprintf("failed to create script tmp file: %v", err), updates)
 		return
@@ -124,8 +124,8 @@ func startScript(ctx context.Context, d *pb.Data, s *jobStorage) {
 
 	log.Infof("started script process: %v", cmd.Process.Pid)
 	if jobUUIDP {
-		s.Set(jobUUID, cmd.Process.Pid)
-		defer s.Remove(jobUUID)
+		s.jobStorage.Set(jobUUID, cmd.Process.Pid)
+		defer s.jobStorage.Remove(jobUUID)
 	}
 
 	var wg sync.WaitGroup
@@ -179,14 +179,14 @@ func outputCollector(stdtype string, pipe io.ReadCloser, outputs chan<- V1Update
 
 var syscallKill = syscall.Kill
 
-func cancel(ctx context.Context, d *pb.Data, s *jobStorage) {
+func cancel(ctx context.Context, d *pb.Data, s *serverContext) {
 	jobUUID, jobUUIDP := d.GetMetadata()["job_uuid"]
 	if !jobUUIDP {
 		log.Errorln("No job uuid found in job's metadata, aborting.")
 		return
 	}
 
-	pid, prs := s.Get(jobUUID)
+	pid, prs := s.jobStorage.Get(jobUUID)
 	if !prs {
 		log.Errorf("Cannot cancel unknown job %v", jobUUID)
 		return

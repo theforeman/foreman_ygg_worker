@@ -65,8 +65,27 @@ func main() {
 
 	// Register as a Worker service with gRPC and start accepting connections.
 	s := grpc.NewServer()
-	pb.RegisterWorkerServer(s, &foremanServer{jobStorage: newJobStorage()})
+
+	js := newJobStorage()
+	fs := foremanServer{
+		serverContext: serverContext{jobStorage: &js, workingDirectory: determineWorkdir()},
+	}
+	pb.RegisterWorkerServer(s, &fs)
 	if err := s.Serve(l); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func determineWorkdir() string {
+	workdir, workdirP := os.LookupEnv("FOREMAN_YGG_WORKER_WORKDIR")
+	if workdirP {
+		return workdir
+	}
+
+	workdir, workdirP = os.LookupEnv("XDG_RUNTIME_DIR")
+	if workdirP {
+		return workdir
+	}
+
+	return "/run"
 }

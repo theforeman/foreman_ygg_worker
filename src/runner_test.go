@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"errors"
-	"git.sr.ht/~spc/go-log"
-	pb "github.com/redhatinsights/yggdrasil/protocol"
 	"strings"
 	"syscall"
 	"testing"
+
+	"git.sr.ht/~spc/go-log"
+	pb "github.com/redhatinsights/yggdrasil/protocol"
 )
 
 func TestDispatch(t *testing.T) {
@@ -35,7 +36,9 @@ func TestDispatch(t *testing.T) {
 			log.SetOutput(&writer)
 			log.SetFlags(0)
 
-			dispatch(context.Background(), test.input, &jobStorage)
+			sc := serverContext{jobStorage: &jobStorage}
+
+			dispatch(context.Background(), test.input, &sc)
 
 			got := writer.String()
 			if got != test.want {
@@ -97,7 +100,9 @@ func TestCancel(t *testing.T) {
 			syscallKill = func(pid int, sig syscall.Signal) error { return test.killError }
 			defer func() { syscallKill = syscall.Kill }()
 
-			cancel(context.Background(), test.input, &jobStorage)
+			sc := serverContext{jobStorage: &jobStorage}
+
+			cancel(context.Background(), test.input, &sc)
 
 			got := writer.String()
 			if got != test.want {
