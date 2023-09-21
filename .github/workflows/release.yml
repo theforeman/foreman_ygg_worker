@@ -21,7 +21,7 @@ jobs:
       - name: Checkout the repository
         uses: actions/checkout@v2
       - name: Generate build files
-        uses: thatisuday/go-cross-build@v1.1.0
+        uses: thatisuday/go-cross-build@v1.0.2
         with:
             platforms: 'linux/amd64'
             package: 'src'
