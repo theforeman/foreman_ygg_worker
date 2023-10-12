@@ -5,6 +5,7 @@ import (
 	"errors"
 	pb "github.com/redhatinsights/yggdrasil/protocol"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"time"
 )
 
@@ -20,7 +21,7 @@ type YggdrasilGrpc struct {
 }
 
 func (c *YggdrasilGrpc) Connect() (err error) {
-	conn, err := grpc.Dial(yggdDispatchSocketAddr, grpc.WithInsecure())
+	conn, err := grpc.Dial(yggdDispatchSocketAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return err
 	}
