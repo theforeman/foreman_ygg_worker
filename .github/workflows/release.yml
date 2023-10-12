@@ -21,7 +21,7 @@ jobs:
       - name: Checkout the repository
         uses: actions/checkout@v2
       - name: Generate build files
-        uses: thatisuday/go-cross-build@v1.0.2
+        uses: adamruzicka/go-cross-build@1.19-alpine3.18
         with:
             platforms: 'linux/amd64'
             package: 'src'
