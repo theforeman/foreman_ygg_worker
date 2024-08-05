@@ -46,7 +46,7 @@ func startScript(ctx context.Context, msg Message, s *serverContext) {
 	updates := make(chan V1Update)
 
 	oa := NewUpdateAggregator(msg.Metadata["return_url"], msg.MessageID)
-	go oa.Aggregate(updates, &YggdrasilGrpc{})
+	go oa.Aggregate(updates, s.externalCommunicator)
 
 	job := V1JobDefinition{}
 	job.Script = string(msg.Content)
