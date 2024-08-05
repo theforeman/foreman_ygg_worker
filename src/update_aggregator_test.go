@@ -5,12 +5,10 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	pb "github.com/redhatinsights/yggdrasil_v0/protocol"
 )
 
 type Capture struct {
-	Captures  []*pb.Data
+	Captures  []Message
 	NextError error
 }
 
@@ -18,8 +16,8 @@ func (c *Capture) Connect() (err error) {
 	return c.NextError
 }
 
-func (c *Capture) Send(d *pb.Data) (err error) {
-	c.Captures = append(c.Captures, d)
+func (c *Capture) Send(msg Message) (err error) {
+	c.Captures = append(c.Captures, msg)
 	return c.NextError
 }
 

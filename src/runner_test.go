@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"git.sr.ht/~spc/go-log"
-	pb "github.com/redhatinsights/yggdrasil_v0/protocol"
 )
 
 func TestDispatch(t *testing.T) {
@@ -16,12 +15,12 @@ func TestDispatch(t *testing.T) {
 
 	tests := []struct {
 		description string
-		input       *pb.Data
+		input       Message
 		want        string
 	}{
 		{
 			want: "Received unknown event 'test'\n",
-			input: &pb.Data{
+			input: Message{
 				Metadata: map[string]string{
 					"event": "test",
 				},
@@ -54,7 +53,7 @@ func TestCancel(t *testing.T) {
 
 	tests := []struct {
 		description string
-		input       *pb.Data
+		input       Message
 		killError   error
 		want        string
 	}{
@@ -63,7 +62,7 @@ func TestCancel(t *testing.T) {
 		},
 		{
 			want: "Cannot cancel unknown job 456-qwe\n",
-			input: &pb.Data{
+			input: Message{
 				Metadata: map[string]string{
 					"job_uuid": "456-qwe",
 				},
@@ -71,7 +70,7 @@ func TestCancel(t *testing.T) {
 		},
 		{
 			want: "Cancelling job 123-abc, sending SIGTERM to process 12345\n",
-			input: &pb.Data{
+			input: Message{
 				Metadata: map[string]string{
 					"job_uuid": "123-abc",
 				},
@@ -80,7 +79,7 @@ func TestCancel(t *testing.T) {
 		{
 			want: "Cancelling job 123-abc, sending SIGTERM to process 12345\n" +
 				"Failed to send SIGTERM to process 12345: kill: (12345) - No such process\n",
-			input: &pb.Data{
+			input: Message{
 				Metadata: map[string]string{
 					"job_uuid": "123-abc",
 				},

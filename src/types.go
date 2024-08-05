@@ -1,6 +1,9 @@
 package main
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 type OutputEvent struct {
 	Content *string `json:"content,omitempty"`
@@ -43,4 +46,12 @@ type V1Updates struct {
 type V1JobDefinition struct {
 	Script        string  `json:"script"`
 	EffectiveUser *string `json:"effective_user"`
+}
+
+type Message struct {
+	MessageID  string            `json:"message_id"`
+	ResponseTo string            `json:"response_to"`
+	Directive  string            `json:"directive"`
+	Metadata   map[string]string `json:"metadata"`
+	Content    json.RawMessage   `json:"content"`
 }

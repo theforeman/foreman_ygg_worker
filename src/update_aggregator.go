@@ -6,7 +6,6 @@ import (
 
 	"git.sr.ht/~spc/go-log"
 	"github.com/google/uuid"
-	pb "github.com/redhatinsights/yggdrasil_v0/protocol"
 )
 
 const CountThreshold = 32
@@ -65,14 +64,14 @@ func (a *UpdateAggregator) SendUpdates(c ExternalCommunication) {
 		return
 	}
 
-	data := &pb.Data{
-		MessageId:  uuid.New().String(),
+	data := Message{
+		Directive:  a.ReturnURL,
+		MessageID:  uuid.New().String(),
 		ResponseTo: a.MessageID,
 		Content:    payload,
 		Metadata: map[string]string{
 			"Content-Type": "application/json",
 		},
-		Directive: a.ReturnURL,
 	}
 
 	if err := c.Send(data); err != nil {
