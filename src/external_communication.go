@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/redhatinsights/yggdrasil/worker"
 	pb "github.com/redhatinsights/yggdrasil_v0/protocol"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -55,5 +56,21 @@ func (c *YggdrasilGrpc) Send(msg Message) (err error) {
 	}
 
 	_, err = c.c.Send(ctx, d)
+	return err
+}
+
+type YggdrasilDBus struct {
+	w *worker.Worker
+}
+
+func (c *YggdrasilDBus) Connect() (err error) {
+	return nil
+}
+
+func (c *YggdrasilDBus) Disconnect() {}
+
+func (c *YggdrasilDBus) Send(msg Message) (err error) {
+	_, _, _, err = c.w.Transmit(msg.Directive, msg.MessageID, msg.ResponseTo, msg.Metadata, msg.Content)
+
 	return err
 }
