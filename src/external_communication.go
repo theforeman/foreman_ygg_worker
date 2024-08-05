@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"errors"
-	pb "github.com/redhatinsights/yggdrasil/protocol"
+	"time"
+
+	pb "github.com/redhatinsights/yggdrasil_v0/protocol"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"time"
 )
 
 type ExternalCommunication interface {

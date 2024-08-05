@@ -2,10 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"time"
+
 	"git.sr.ht/~spc/go-log"
 	"github.com/google/uuid"
-	pb "github.com/redhatinsights/yggdrasil/protocol"
-	"time"
+	pb "github.com/redhatinsights/yggdrasil_v0/protocol"
 )
 
 const CountThreshold = 32

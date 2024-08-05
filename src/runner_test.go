@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"git.sr.ht/~spc/go-log"
-	pb "github.com/redhatinsights/yggdrasil/protocol"
+	pb "github.com/redhatinsights/yggdrasil_v0/protocol"
 )
 
 func TestDispatch(t *testing.T) {

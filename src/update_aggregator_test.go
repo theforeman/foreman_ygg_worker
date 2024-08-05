@@ -2,10 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	pb "github.com/redhatinsights/yggdrasil/protocol"
 	"sync"
 	"testing"
 	"time"
+
+	pb "github.com/redhatinsights/yggdrasil_v0/protocol"
 )
 
 type Capture struct {
