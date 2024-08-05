@@ -22,7 +22,14 @@ type serverContext struct {
 
 // Send implements the "Send" method of the Worker gRPC service.
 func (s *foremanServer) Send(ctx context.Context, d *pb.Data) (*pb.Receipt, error) {
-	go dispatch(ctx, d, &s.serverContext)
+	msg := Message{
+		MessageID:  d.GetMessageId(),
+		ResponseTo: d.GetResponseTo(),
+		Metadata:   d.GetMetadata(),
+		Directive:  d.GetDirective(),
+		Content:    d.GetContent(),
+	}
+	go dispatch(ctx, msg, &s.serverContext)
 
 	// Respond to the start request that the work was accepted.
 	return &pb.Receipt{}, nil
