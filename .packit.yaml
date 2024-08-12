@@ -25,7 +25,7 @@ jobs:
     targets:
       - rhel-9
       - rhel-8
-      - rhel-7
+      - epel-7
 
 srpm_build_deps:
   - golang
