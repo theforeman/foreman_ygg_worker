@@ -20,6 +20,8 @@ jobs:
           tagRegexGroup: 1 # Optional. Default is 1.
       - name: Checkout the repository
         uses: actions/checkout@v2
+        with:
+          submodules: true
       - name: Generate build files
         uses: adamruzicka/go-cross-build@1.19-alpine3.18
         with:
