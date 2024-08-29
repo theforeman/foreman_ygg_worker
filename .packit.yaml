@@ -16,6 +16,7 @@ downstream_package_name: foreman_ygg_worker
 actions:
   post-upstream-clone:
     - "wget https://raw.githubusercontent.com/theforeman/foreman-packaging/rpm/develop/packages/client/foreman_ygg_worker/foreman_ygg_worker.spec -O foreman_ygg_worker.spec"
+    - git submodule update --init
   get-current-version: "awk '/VERSION :=/ { print $3 }' Makefile"
   create-archive: make distribution-tarball
 
