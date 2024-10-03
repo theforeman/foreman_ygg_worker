@@ -6,7 +6,7 @@ Documentation=https://github.com/theforeman/foreman_ygg_worker
 Type=dbus
 User=root
 Group=@worker_group@
-ExecStart=@libexecdir@/foreman_worker
+ExecStart=@libexecdir@/@executable@
 BusName=com.redhat.Yggdrasil1.Worker1.foreman
 
 [Install]

@@ -10,14 +10,14 @@ go_sources := $(wildcard src/*.go)
 
 build: $(go_sources)
 	mkdir -p build
-	CGO_ENABLED=0 go build -o build/foreman_worker $^
+	CGO_ENABLED=0 go build -o build/$(PKGNAME) $^
 
 .PHONY: data
 data: build/data/com.redhat.Yggdrasil1.Worker1.foreman.conf build/data/com.redhat.Yggdrasil1.Worker1.foreman.service
 
 .PHONY: install
 install: build data
-	install -D -m 755 build/foreman_worker $(DESTDIR)$(LIBEXECDIR)/foreman_worker
+	install -D -m 755 build/$(PKGNAME) $(DESTDIR)$(LIBEXECDIR)/$(PKGNAME)
 	install -D -m 644 build/data/com.redhat.Yggdrasil1.Worker1.foreman.conf $(DESTDIR)/usr/share/dbus-1/system.d/com.redhat.Yggdrasil1.Worker1.foreman.conf
 	install -D -m 644 data/dbus_com.redhat.Yggdrasil1.Worker1.foreman.service $(DESTDIR)/usr/share/dbus-1/system-services/com.redhat.Yggdrasil1.Worker1.foreman.service
 	install -D -m 644 build/data/com.redhat.Yggdrasil1.Worker1.foreman.service $(DESTDIR)/usr/lib/systemd/system/com.redhat.Yggdrasil1.Worker1.foreman.service
@@ -52,4 +52,5 @@ build/data/%: data/%.in
 	sed \
 		-e 's,[@]libexecdir[@],$(LIBEXECDIR),g' \
 		-e 's,[@]worker_group[@],$(WORKER_GROUP),g' \
+		-e 's,[@]executable[@],$(PKGNAME),g' \
 		$< > $@
