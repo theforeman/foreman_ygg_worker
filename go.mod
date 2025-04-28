@@ -1,6 +1,6 @@
 module github.com/theforeman/ygg_worker
 
-go 1.19
+go 1.23
 
 require (
 	git.sr.ht/~spc/go-log v0.1.1
