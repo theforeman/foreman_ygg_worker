@@ -46,11 +46,11 @@ func main() {
 		log.Info("YGG_SOCKET_ADDR environment variable found; attempting gRPC connection")
 
 		// Dial the dispatcher on its well-known address.
-		conn, err := grpc.Dial(yggdDispatchSocketAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		conn, err := grpc.NewClient(yggdDispatchSocketAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			log.Fatal(err)
 		}
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 
 		// Create a dispatcher client
 		c := pb.NewDispatcherClient(conn)
@@ -75,7 +75,7 @@ func main() {
 		// Register as a Worker service with gRPC and start accepting connections.
 		s := grpc.NewServer()
 
-		fs.serverContext.externalCommunicator = &YggdrasilGrpc{}
+		fs.externalCommunicator = &YggdrasilGrpc{}
 
 		pb.RegisterWorkerServer(s, &fs)
 		if err := s.Serve(l); err != nil {
@@ -94,7 +94,7 @@ func main() {
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 
-		fs.serverContext.externalCommunicator = &YggdrasilDBus{w: w}
+		fs.externalCommunicator = &YggdrasilDBus{w: w}
 
 		if err := w.Connect(quit); err != nil {
 			log.Fatalf("cannot connect: %v", err)
