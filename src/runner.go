@@ -62,7 +62,7 @@ func startScript(ctx context.Context, msg Message, s *serverContext) {
 		reportStartError(fmt.Sprintf("failed to create script tmp file: %v", err), updates)
 		return
 	}
-	defer os.Remove(scriptfile.Name())
+	defer func() { _ = os.Remove(scriptfile.Name()) }()
 
 	n2, err := scriptfile.Write([]byte(job.Script))
 	if err != nil {

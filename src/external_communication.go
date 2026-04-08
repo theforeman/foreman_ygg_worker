@@ -23,7 +23,7 @@ type YggdrasilGrpc struct {
 }
 
 func (c *YggdrasilGrpc) Connect() (err error) {
-	conn, err := grpc.Dial(yggdDispatchSocketAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(yggdDispatchSocketAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return err
 	}
@@ -35,13 +35,13 @@ func (c *YggdrasilGrpc) Connect() (err error) {
 
 func (c *YggdrasilGrpc) Disconnect() {
 	if c.conn != nil {
-		c.conn.Close()
+		_ = c.conn.Close()
 	}
 }
 
 func (c *YggdrasilGrpc) Send(msg Message) (err error) {
 	if c.c == nil {
-		return errors.New("Trying to send without established connection")
+		return errors.New("trying to send without established connection")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
