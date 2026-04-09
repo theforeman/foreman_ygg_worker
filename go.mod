@@ -4,7 +4,7 @@ go 1.25
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/redhatinsights/yggdrasil v0.4.6-0.20250429103803-477928891fab
+	github.com/redhatinsights/yggdrasil v0.4.9
 	github.com/redhatinsights/yggdrasil_v0 v0.0.0-20210811162724-41397343c25b
 	github.com/subpop/go-log v0.1.2
 	google.golang.org/grpc v1.79.3
