@@ -23,7 +23,7 @@ jobs:
         with:
           submodules: true
       - name: Generate build files
-        uses: adamruzicka/go-cross-build@1.24-alpine3.23
+        uses: adamruzicka/go-cross-build@1.25-alpine3.23
         with:
             platforms: 'linux/amd64'
             package: 'src'
