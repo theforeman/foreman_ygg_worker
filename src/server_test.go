@@ -11,10 +11,20 @@ import (
 	pb "github.com/redhatinsights/yggdrasil_v0/protocol"
 )
 
+func waitForLog(writer *strings.Builder, substr string) bool {
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if strings.Contains(writer.String(), substr) {
+			return true
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	return false
+}
+
 func TestForemanServerSend(t *testing.T) {
 	var writer strings.Builder
-	log.SetOutput(&writer)
-	log.SetFlags(0)
+	setupLogCapture(t, &writer, log.LevelInfo)
 
 	js := newJobStorage()
 	fs := foremanServer{
@@ -45,18 +55,15 @@ func TestForemanServerSend(t *testing.T) {
 		t.Errorf("Send should return non-nil Receipt")
 	}
 
-	time.Sleep(50 * time.Millisecond)
-
-	logOutput := writer.String()
-	if !strings.Contains(logOutput, "Received unknown event 'unknown'") {
-		t.Errorf("Expected dispatch to be called and log unknown event, got %v", logOutput)
+	expected := "Received unknown event 'unknown'"
+	if !waitForLog(&writer, expected) {
+		t.Errorf("Expected dispatch to be called and log unknown event, got %v", writer.String())
 	}
 }
 
 func TestForemanServerHandleRx(t *testing.T) {
 	var writer strings.Builder
-	log.SetOutput(&writer)
-	log.SetFlags(0)
+	setupLogCapture(t, &writer, log.LevelInfo)
 
 	js := newJobStorage()
 	fs := foremanServer{
@@ -71,16 +78,15 @@ func TestForemanServerHandleRx(t *testing.T) {
 		"event": "unknown",
 	}
 
+	// nil worker: handleRx does not use the worker argument currently
 	err := fs.handleRx(nil, "test-addr", "test-id", "test-response-to", metadata, []byte("test data"))
 
 	if err != nil {
 		t.Errorf("handleRx should not return error, got %v", err)
 	}
 
-	time.Sleep(50 * time.Millisecond)
-
-	logOutput := writer.String()
-	if !strings.Contains(logOutput, "Received unknown event 'unknown'") {
-		t.Errorf("Expected dispatch to be called and log unknown event, got %v", logOutput)
+	expected := "Received unknown event 'unknown'"
+	if !waitForLog(&writer, expected) {
+		t.Errorf("Expected dispatch to be called and log unknown event, got %v", writer.String())
 	}
 }

@@ -34,17 +34,17 @@ func TestDetermineWorkdir(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			if !test.setForemanYggWorkerWorkdir {
+			if test.setForemanYggWorkerWorkdir {
+				t.Setenv("FOREMAN_YGG_WORKER_WORKDIR", test.foremanYggWorkerWorkdir)
+			} else {
 				t.Setenv("FOREMAN_YGG_WORKER_WORKDIR", "")
 				_ = os.Unsetenv("FOREMAN_YGG_WORKER_WORKDIR")
-			} else {
-				t.Setenv("FOREMAN_YGG_WORKER_WORKDIR", test.foremanYggWorkerWorkdir)
 			}
-			if !test.setXdgRuntimeDir {
+			if test.setXdgRuntimeDir {
+				t.Setenv("XDG_RUNTIME_DIR", test.xdgRuntimeDir)
+			} else {
 				t.Setenv("XDG_RUNTIME_DIR", "")
 				_ = os.Unsetenv("XDG_RUNTIME_DIR")
-			} else {
-				t.Setenv("XDG_RUNTIME_DIR", test.xdgRuntimeDir)
 			}
 
 			got := determineWorkdir()

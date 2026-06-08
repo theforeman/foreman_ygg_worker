@@ -13,13 +13,26 @@ import (
 	"github.com/subpop/go-log"
 )
 
+func setupLogCapture(t *testing.T, w io.Writer, level log.Level) {
+	origOut := log.Writer()
+	origFlags := log.Flags()
+	origLevel := log.CurrentLevel()
+	t.Cleanup(func() {
+		log.SetOutput(origOut)
+		log.SetFlags(origFlags)
+		log.SetLevel(origLevel)
+	})
+	log.SetOutput(w)
+	log.SetFlags(0)
+	log.SetLevel(level)
+}
+
 func TestDispatch(t *testing.T) {
 	tests := []struct {
-		description     string
-		input           Message
-		want            string
-		setupContext    func(*testing.T) serverContext
-		needsLogCapture bool
+		description  string
+		input        Message
+		want         string
+		setupContext func(*testing.T) serverContext
 	}{
 		{
 			description: "Unknown event",
@@ -33,7 +46,6 @@ func TestDispatch(t *testing.T) {
 				js := newJobStorage()
 				return serverContext{jobStorage: &js}
 			},
-			needsLogCapture: true,
 		},
 		{
 			description: "Missing event key defaults to start",
@@ -52,7 +64,6 @@ func TestDispatch(t *testing.T) {
 					externalCommunicator: &Capture{},
 				}
 			},
-			needsLogCapture: true,
 		},
 		{
 			description: "Cancel event with no job_uuid",
@@ -66,29 +77,21 @@ func TestDispatch(t *testing.T) {
 				js := newJobStorage()
 				return serverContext{jobStorage: &js}
 			},
-			needsLogCapture: true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			var writer strings.Builder
-
-			if test.needsLogCapture {
-				log.SetOutput(&writer)
-				log.SetFlags(0)
-				log.SetLevel(log.LevelDebug)
-			}
+			setupLogCapture(t, &writer, log.LevelDebug)
 
 			sc := test.setupContext(t)
 
 			dispatch(context.Background(), test.input, &sc)
 
-			if test.needsLogCapture {
-				got := writer.String()
-				if !strings.Contains(got, test.want) {
-					t.Errorf("Expected log to contain |%+v|, got |%+v|", test.want, got)
-				}
+			got := writer.String()
+			if !strings.Contains(got, test.want) {
+				t.Errorf("Expected log to contain |%+v|, got |%+v|", test.want, got)
 			}
 		})
 	}
@@ -138,10 +141,7 @@ func TestCancel(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			var writer strings.Builder
-
-			log.SetOutput(&writer)
-			log.SetFlags(0)
-			log.SetLevel(log.LevelInfo)
+			setupLogCapture(t, &writer, log.LevelInfo)
 
 			syscallKill = func(pid int, sig syscall.Signal) error { return test.killError }
 			defer func() { syscallKill = syscall.Kill }()
@@ -160,8 +160,7 @@ func TestCancel(t *testing.T) {
 
 func TestReportStartError(t *testing.T) {
 	var writer strings.Builder
-	log.SetOutput(&writer)
-	log.SetFlags(0)
+	setupLogCapture(t, &writer, log.LevelInfo)
 
 	updates := make(chan V1Update, 2)
 	message := "test error message"
@@ -464,8 +463,7 @@ func TestStartScript(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			var writer strings.Builder
-			log.SetOutput(&writer)
-			log.SetFlags(0)
+			setupLogCapture(t, &writer, log.LevelInfo)
 
 			capture := &Capture{}
 			js := newJobStorage()
@@ -482,8 +480,10 @@ func TestStartScript(t *testing.T) {
 
 			startScript(context.Background(), msg, &sc)
 
-			// Give the aggregator goroutine time to finish sending
-			time.Sleep(200 * time.Millisecond)
+			deadline := time.Now().Add(2 * time.Second)
+			for time.Now().Before(deadline) && len(capture.Captures) == 0 {
+				time.Sleep(5 * time.Millisecond)
+			}
 
 			test.validateCaptures(t, capture.Captures)
 

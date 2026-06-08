@@ -174,8 +174,7 @@ func TestAggregate(t *testing.T) {
 
 func TestSendUpdatesError(t *testing.T) {
 	var writer strings.Builder
-	log.SetOutput(&writer)
-	log.SetFlags(0)
+	setupLogCapture(t, &writer, log.LevelInfo)
 
 	c := Capture{NextError: errors.New("test send error")}
 	ua := NewUpdateAggregator("http://something.somewhere", "12345")
