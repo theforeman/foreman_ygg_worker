@@ -2,9 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
+	"strings"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/subpop/go-log"
 )
 
 type Capture struct {
@@ -165,5 +169,20 @@ func TestAggregate(t *testing.T) {
 				t.Errorf("Bulk update contained unexpected number of sub-updates: |%+v| != |%+v|", got, 0)
 			}
 		})
+	}
+}
+
+func TestSendUpdatesError(t *testing.T) {
+	var writer strings.Builder
+	setupLogCapture(t, &writer, log.LevelInfo)
+
+	c := Capture{NextError: errors.New("test send error")}
+	ua := NewUpdateAggregator("http://something.somewhere", "12345")
+	ua.Add(NewOutputUpdate("stdout", "test"))
+	ua.SendUpdates(&c)
+
+	logOutput := writer.String()
+	if !strings.Contains(logOutput, "test send error") {
+		t.Errorf("Expected error to be logged, got %v", logOutput)
 	}
 }
